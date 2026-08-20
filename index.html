@@ -29,7 +29,7 @@
   header{
     display:flex;
     align-items:center;
-    justify-space-between;
+    justify-content:space-between;
     padding:18px 28px;
     border-bottom:2px dashed #3a3a42;
   }
@@ -197,6 +197,24 @@
   .send-btn:not(:disabled):hover{ background:#a3391f; }
 
   /* COCINA */
+  .cocina-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .clear-all-btn{
+    background:#3a3a42;
+    color:var(--paper);
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .clear-all-btn:hover{ background:var(--red); }
   .cocina-grid{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
@@ -210,7 +228,7 @@
     box-shadow:0 10px 22px rgba(0,0,0,.3);
     position:relative;
   }
-  .order-ticket.listo{ opacity:0.45; }
+  .order-ticket.listo{ opacity:0.75; }
   .order-ticket::before{
     content:"";
     display:block;
@@ -255,6 +273,21 @@
     cursor:pointer;
   }
   .ready-btn:hover{ background:#3d6141; }
+  .delete-btn{
+    width:100%;
+    margin-top:10px;
+    padding:8px;
+    background:#6b6152;
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    font-family:'Anton', sans-serif;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .delete-btn:hover{ background:var(--red); }
   .empty-state{
     grid-column:1/-1;
     text-align:center;
@@ -319,6 +352,10 @@
 
   <!-- VISTA COCINA -->
   <section id="view-cocina" class="hidden">
+    <div class="cocina-header">
+      <span style="font-size:13px; color:var(--muted);">Órdenes activas</span>
+      <button class="clear-all-btn" onclick="clearCompletedOrders()">🗑️ Limpiar entregados</button>
+    </div>
     <div class="cocina-grid" id="cocina-grid"></div>
   </section>
 </main>
@@ -478,7 +515,10 @@ function renderCocina(){
       ${order.note ? `<div class="order-note">"${order.note}"</div>` : ''}
       ${order.status==='pendiente'
         ? `<button class="ready-btn" onclick="markReady('${order.id}')">Marcar listo</button>`
-        : `<div style="text-align:center;font-size:12px;color:#4c7a51;margin-top:12px;">✓ Listo</div>`}
+        : `
+          <div style="text-align:center;font-size:12px;color:#4c7a51;margin-top:10px;font-weight:bold;">✓ Listo</div>
+          <button class="delete-btn" onclick="deleteOrder('${order.id}')">Entregado / Borrar</button>
+        `}
     </div>
   `).join('');
 }
@@ -486,6 +526,23 @@ function renderCocina(){
 // Marcar como listo en Firebase
 function markReady(id){
   pedidosRef.child(id).update({ status: 'listo' });
+}
+
+// Eliminar una orden individual de Firebase
+function deleteOrder(id){
+  pedidosRef.child(id).remove();
+}
+
+// Limpiar todas las órdenes que estén en estado 'listo'
+function clearCompletedOrders(){
+  const completed = allOrders.filter(o => o.status === 'listo');
+  if(completed.length === 0){
+    alert("No hay órdenes listas para borrar.");
+    return;
+  }
+  if(confirm(`¿Deseas eliminar las ${completed.length} órdenes entregadas?`)){
+    completed.forEach(o => pedidosRef.child(o.id).remove());
+  }
 }
 
 // Escuchar cambios en tiempo real mediante WebSockets de Firebase
